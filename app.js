@@ -73,23 +73,14 @@ async function boot(){
   if(configured && window.supabase){
     sb = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anon);
     const {data:{session}} = await sb.auth.getSession();
-    if(session){ 
-      await onLogin(session.user);
-      // Purge stale plans on every page load (not just fresh login)
-      setTimeout(()=>{ purgeStaleTodayPlan(); }, 100);
-    }
+    if(session){ await onLogin(session.user); }
     else showAuth();
     sb.auth.onAuthStateChange((_e,s)=>{ if(!s) showAuth(); });
   }else{
     LOCAL_MODE = true;
     $("#configWarn").style.display="block";
-    // auto-login local demo
     const email = localStorage.getItem("demo_email");
-    if(email){ 
-      await onLogin({id:"local",email});
-      // Purge stale plans on every page load
-      setTimeout(()=>{ purgeStaleTodayPlan(); }, 100);
-    }
+    if(email){ await onLogin({id:"local",email}); }
     else showAuth();
   }
   bindGlobalUI();
@@ -166,34 +157,44 @@ async function onLogin(user){
   $("#userEmail").textContent=user.email;
   $("#userAv").textContent=(user.email[0]||"?").toUpperCase();
   await loadState();
-  migrateStalePlans();  // one-time fix: archive any plans not belonging to today
-  purgeStaleTodayPlan(); // Issue 1 fix: clear today's slot if its stored day != actual today
+  await purgeStaleTodayPlan(); // archive old days + build today's plan if missing
   rolloverDay();
   switchView("dashboard");
 }
 
-/* Issue 1 fix: detect and purge stale plans from previous days.
-   If the most recent entry's .day field doesn't match today, it means the app
-   was opened yesterday and the calendar flipped overnight. Delete all old entries. */
-function purgeStaleTodayPlan(){
+/* Detect and purge stale plans from previous days, then auto-build today's plan.
+   Saves immediately (bypasses debounce) so the clean state persists to Supabase. */
+async function purgeStaleTodayPlan(){
   const today = todayStr();
-  if(!STATE.dayLog) return;
-  
-  // Find the most recent plan by date key
-  const dates = Object.keys(STATE.dayLog).sort().reverse();
-  if(dates.length === 0) return;
-  
-  const mostRecentDate = dates[0];
-  const mostRecentLog = STATE.dayLog[mostRecentDate];
-  
-  // If the most recent plan's .day field doesn't match today, purge it
-  if(mostRecentLog && mostRecentLog.day && mostRecentLog.day !== today){
-    // Delete all old entries so buildDayPlan starts fresh for today
-    Object.keys(STATE.dayLog).forEach(d => {
-      if(d < today) delete STATE.dayLog[d];
-    });
-    saveState();
+  if(!STATE||!STATE.dayLog) return;
+
+  // Check if any entry is from before today
+  const hasOldEntries = Object.keys(STATE.dayLog).some(d => d < today);
+  const hasTodayPlan = STATE.dayLog[today] && STATE.dayLog[today].groups && !STATE.dayLog[today].archived;
+
+  if(!hasOldEntries && hasTodayPlan) return; // nothing to do
+
+  // Archive old entries (keep for history), delete today's slot so it rebuilds fresh
+  Object.keys(STATE.dayLog).forEach(d => {
+    if(d < today && STATE.dayLog[d]) STATE.dayLog[d].archived = true;
+  });
+  // Always delete today's slot if it exists but isn't a real today plan
+  if(STATE.dayLog[today] && !hasTodayPlan) delete STATE.dayLog[today];
+
+  // Save immediately — bypass debounce so this persists even if page reloads
+  if(LOCAL_MODE){
+    localStorage.setItem(localKey(), JSON.stringify(STATE));
+  } else if(sb && USER){
+    try{
+      await sb.from("progress").upsert({
+        user_id: USER.id, state: STATE, updated_at: new Date().toISOString()
+      });
+    }catch(e){ console.warn("purge save error", e); }
   }
+
+  // Rebuild today's plan immediately and switch to it
+  buildDayPlan(currentPlanMode||"full");
+  if($("#view-dashboard").classList.contains("active")) renderDashboard();
 }
 
 /* One-time migration: any dayLog entry with groups whose key != today
@@ -298,13 +299,12 @@ function archiveOldPlans(){
 
 /* Midnight rollover: detect date change while app is open (Riyadh time) */
 let _lastKnownDate=todayStr();
-setInterval(()=>{
+setInterval(async()=>{
   const now=todayStr();
   if(now!==_lastKnownDate){
     _lastKnownDate=now;
     if(STATE){
-      purgeStaleTodayPlan(); // force-delete yesterday's plan
-      archiveOldPlans();     // archive anything older
+      await purgeStaleTodayPlan();
       if($("#view-plan").classList.contains("active")) renderPlan();
       toast("New day — your daily plan has been refreshed.");
     }
