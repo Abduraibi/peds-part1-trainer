@@ -692,7 +692,8 @@ function _planFromSaved(saved, mode){
         sub:       g.sub,
         icon:      g.icon,
         specialty: g.specialty || null,
-        items:     ids.map(id => QBY[id]).filter(Boolean)
+        items: ids.map(id => QBY[id]).filter(Boolean),
+itemIds: ids
       };
     })
     .filter(g => g.items.length > 0);
@@ -713,13 +714,21 @@ function _planFromSaved(saved, mode){
 /* mark a question complete within today's frozen plan */
 function markDayDone(id){
   const day = runnerCtx?.pastDay || todayStr();
-  const log = STATE.dayLog[day];
 
-  if(log){
-    log.done = log.done || {};
-    log.done[id] = true;
-    saveState();
+  STATE.dayLog[day] = STATE.dayLog[day] || {
+    day,
+    groups: [],
+    done: {}
+  };
+
+  if(!STATE.dayLog[day].done){
+    STATE.dayLog[day].done = {};
   }
+
+  STATE.dayLog[day].done[id] = true;
+
+  saveState();
+}
 }
 /* flatten today's plan into an ordered id list (for resume / study-all) */
 function todayOrderedIds(){
@@ -1227,9 +1236,9 @@ function renderCalendar(){
     const isToday = dateStr === today;
     const isPast  = dateStr < today;
     const log = STATE.dayLog[dateStr];
-    const allIds = log && log.groups ? log.groups.flatMap(g=>g.itemIds||[]) : [];
-    const doneIds = log && log.done ? allIds.filter(id=>log.done[id]) : [];
-    const pct = allIds.length ? Math.round(doneIds.length/allIds.length*100) : 0;
+    const allIds = (log?.groups || []).flatMap(g => g.itemIds || []);
+    const doneIds = allIds.filter(id => log?.done?.[id]);
+    const pct = allIds.length ? Math.round((doneIds.length / allIds.length) * 100): 0;
     const complete = allIds.length>0 && doneIds.length===allIds.length;
     const m = SPECIALTY_META[entry.spec]||{icon:"📋",color:"spec-gen"};
     const dayLabel = dateObj.toLocaleDateString(undefined,{month:'short',day:'numeric'});
