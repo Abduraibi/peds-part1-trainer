@@ -22,34 +22,100 @@ const STUDY_MODES = {
   oncall: { core: 15, secondary: 5, wrongLoop: 0, label: "On-Call Min", icon: "🏥", description: "15 core + traps only" }
 };
 
-/* Clinical specialties for domain-based planning */
+/* Clinical specialties — exactly matching questions_data.json specialty field */
 const SPECIALTIES = [
   "General Pediatrics",
-  "Neonatology",
-  "Cardiology",
-  "Pulmonology",
-  "Gastroenterology",
-  "Nephrology",
-  "Neurology",
-  "Endocrinology",
-  "Immunology",
-  "Hematology",
   "Infectious Diseases",
-  "Dermatology",
-  "Rheumatology",
+  "Neurology",
+  "Cardiology",
+  "Gastroenterology",
+  "Hematology",
   "Emergency Medicine",
-  "Mental Health",
-  "Genetics",
-  "Oncology",
-  "Surgery"
+  "Endocrinology",
+  "Nephrology",
+  "Pulmonology",
+  "Neonatology",
+  "Immunology",
+  "Developmental & Behavioral",
+  "Rheumatology",
+  "Adolescent Medicine",
+  "Critical Care Medicine",
+  "Dermatology"
+];
+
+/* Visual metadata per specialty: icon + CSS color variable suffix */
+const SPECIALTY_META = {
+  "General Pediatrics":        { icon:"👶", color:"spec-gen"   },
+  "Infectious Diseases":       { icon:"🦠", color:"spec-inf"   },
+  "Neurology":                 { icon:"🧠", color:"spec-neu"   },
+  "Cardiology":                { icon:"❤️", color:"spec-card"  },
+  "Gastroenterology":          { icon:"🫁", color:"spec-gas"   },
+  "Hematology":                { icon:"🩸", color:"spec-hem"   },
+  "Emergency Medicine":        { icon:"🚨", color:"spec-em"    },
+  "Endocrinology":             { icon:"⚗️", color:"spec-end"   },
+  "Nephrology":                { icon:"🫘", color:"spec-nep"   },
+  "Pulmonology":               { icon:"🫧", color:"spec-pul"   },
+  "Neonatology":               { icon:"🍼", color:"spec-neo"   },
+  "Immunology":                { icon:"🛡️", color:"spec-imm"   },
+  "Developmental & Behavioral":{ icon:"🧩", color:"spec-dev"   },
+  "Rheumatology":              { icon:"🦴", color:"spec-rhe"   },
+  "Adolescent Medicine":       { icon:"🏃", color:"spec-ado"   },
+  "Critical Care Medicine":    { icon:"🏥", color:"spec-crit"  },
+  "Dermatology":               { icon:"🔬", color:"spec-derm"  },
+};
+
+/* 35-day specialty schedule: Jun 2 → Jul 6, 2026
+   Distributed by question count (General Peds gets most days).
+   Each entry: [dayNumber, specialty, landmark?]            */
+const STUDY_SCHEDULE = [
+  // ── Week 1: Core foundations ──────────────────────────
+  { day:1,  spec:"General Pediatrics",         landmark:"🚀 Day 1 — Start" },
+  { day:2,  spec:"General Pediatrics"         },
+  { day:3,  spec:"General Pediatrics"         },
+  { day:4,  spec:"Infectious Diseases",        landmark:"🦠 Infectious Block" },
+  { day:5,  spec:"Infectious Diseases"        },
+  { day:6,  spec:"Cardiology",                 landmark:"❤️ Cardio Block" },
+  { day:7,  spec:"Cardiology",                 landmark:"🧪 Week 1 Review" },
+  // ── Week 2: Systems ────────────────────────────────────
+  { day:8,  spec:"Neurology",                  landmark:"🧠 Neuro Block" },
+  { day:9,  spec:"Neurology"                  },
+  { day:10, spec:"Gastroenterology",           landmark:"🫁 GI Block" },
+  { day:11, spec:"Gastroenterology"           },
+  { day:12, spec:"Hematology",                 landmark:"🩸 Heme Block" },
+  { day:13, spec:"Pulmonology",                landmark:"🫧 Pulm Block" },
+  { day:14, spec:"General Pediatrics",         landmark:"🧪 Week 2 Review" },
+  // ── Week 3: Subspecialties ─────────────────────────────
+  { day:15, spec:"Endocrinology",              landmark:"⚗️ Endo Block" },
+  { day:16, spec:"Nephrology",                 landmark:"🫘 Nephro Block" },
+  { day:17, spec:"Neonatology",                landmark:"🍼 Neonate Block" },
+  { day:18, spec:"Emergency Medicine",         landmark:"🚨 EM Block" },
+  { day:19, spec:"Emergency Medicine"         },
+  { day:20, spec:"Immunology",                 landmark:"🛡️ Immuno Block" },
+  { day:21, spec:"Rheumatology",               landmark:"⭐ Midpoint — Major Review" },
+  // ── Week 4: Niche + reinforcement ─────────────────────
+  { day:22, spec:"Developmental & Behavioral", landmark:"🧩 Dev-Behav Block" },
+  { day:23, spec:"Adolescent Medicine",        landmark:"🏃 Adolescent Block" },
+  { day:24, spec:"Critical Care Medicine",     landmark:"🏥 Critical Care Block" },
+  { day:25, spec:"Dermatology",                landmark:"🔬 Derm Block" },
+  { day:26, spec:"General Pediatrics"         },
+  { day:27, spec:"General Pediatrics"         },
+  { day:28, spec:"General Pediatrics",         landmark:"🧪 Week 4 Review" },
+  // ── Week 5: Consolidation sprint ──────────────────────
+  { day:29, spec:"Infectious Diseases",        landmark:"🔁 Consolidation Sprint" },
+  { day:30, spec:"Neurology"                  },
+  { day:31, spec:"Cardiology"                 },
+  { day:32, spec:"Hematology"                 },
+  { day:33, spec:"General Pediatrics",         landmark:"🔥 Final Intensive" },
+  { day:34, spec:"General Pediatrics",         landmark:"🔥 Final Intensive" },
+  { day:35, spec:"General Pediatrics",         landmark:"✨ Final Polish — Exam tomorrow" },
 ];
 
 /* Question type labels */
 const QUESTION_TYPES = {
   scenario: "Clinical Scenario",
-  recall: "Direct Recall",
-  concept: "Concept Training",
-  image: "Image-Based"
+  recall:   "Direct Recall",
+  concept:  "Concept Training",
+  image:    "Image-Based"
 };
 
 /* ---------------------------------------------------------------------------
@@ -80,21 +146,18 @@ const daysBetween = (a,b)=> Math.round((new Date(b)-new Date(a))/86400000);
 --------------------------------------------------------------------------- */
 function freshState(){
   return {
-    schema: 2,
+    schema: 3,
     startDate: todayStr(),
-    edits:{},  // id -> {answer, stem, notes}
-    seen:{},   // id -> {attempts, correct, lastResult, lastSeen, box(SR), nextDue}
-    review:{}, // id -> true (saved for review)
-    wrongLoop:{}, // date -> [ids] mistakes made that day, to repeat next active day
-    dayLog:{}, // date -> {mode, completedTaskKeys:[], assigned:[ids], specialty, day}
-    mock:[],   // history [{date,score,total,mode}]
+    edits:{},       // id -> {answer, stem, notes}
+    seen:{},        // id -> {attempts, correct, lastResult, lastSeen, box(SR), nextDue}
+    review:{},      // id -> true (saved for review)
+    wrongLoop:{},   // date -> [ids]
+    dayLog:{},      // date -> frozen plan object
+    mock:[],        // [{date,score,total,mode}]
     lastActiveDate: null,
-    calendar: null,  // pre-built 39-day calendar
     fudulDone: 0,
     fudulDoneDate: null,
-    // New: specialty focus tracking
-    specialtyStats: {},  // specialty -> {total, mastered, attempts, correct}
-    currentMode: "full"  // tracks user's preferred study mode
+    specialtyStats: {}  // specialty -> {attempts, correct}
   };
 }
 
@@ -405,328 +468,245 @@ function pendingWrongLoop(){
 }
 
 /* ---------------------------------------------------------------------------
-   CALENDAR BUILDING - 39-day pre-built study schedule with specialty rotation
+   SPECIALTY HELPERS
 --------------------------------------------------------------------------- */
-function buildStudyCalendar(){
-  const today = todayStr();
-  const startDate = new Date(today);
-  const endDate = new Date(FINISH_BY);
-  const daysAvailable = daysBetween(today, endDate) + 1;
-  
-  const calendar = [];
-  const specialtyRotation = SPECIALTIES;
-  
-  for(let day = 1; day <= daysAvailable; day++){
-    const currentDate = new Date(startDate);
-    currentDate.setDate(currentDate.getDate() + day - 1);
-    const dateStr = currentDate.toISOString().slice(0, 10);
-    
-    // Rotate specialty every 2-3 days
-    const specialtyIdx = Math.floor((day - 1) / 2) % specialtyRotation.length;
-    const specialty = specialtyRotation[specialtyIdx];
-    
-    // Mark special event days
-    let eventLabel = null;
-    if(day === 7 || day === 14 || day === 21 || day === 28) eventLabel = "🧪 Weekly Review";
-    if(day === 21) eventLabel = "⭐ Mid-plan Major";
-    if(day >= 35 && day <= 38) eventLabel = "🔥 Final Intensive";
-    if(day === daysAvailable - 1) eventLabel = "✨ Polish Day";
-    if(day === daysAvailable) eventLabel = "🎓 Exam Day (Finish by yesterday)";
-    
-    calendar.push({
-      day,
-      date: dateStr,
-      specialty,
-      event: eventLabel,
-      completed: false,
-      qCount: 0  // will be filled when plan is built
-    });
-  }
-  
-  STATE.calendar = calendar;
-  saveState();
-  return calendar;
+/* Get today's scheduled specialty from STUDY_SCHEDULE */
+function getTodayScheduleEntry(){
+  const PLAN_START = "2026-06-02";
+  const dayNum = daysBetween(PLAN_START, todayStr()) + 1; // 1-indexed
+  // Clamp to schedule bounds; after day 35 keep using day 35
+  const clamped = Math.max(1, Math.min(dayNum, STUDY_SCHEDULE.length));
+  return STUDY_SCHEDULE.find(e => e.day === clamped) || STUDY_SCHEDULE[STUDY_SCHEDULE.length - 1];
 }
 
-/* Get calendar day info for today */
-function getTodayCalendarDay(){
-  if(!STATE.calendar) buildStudyCalendar();
-  const today = todayStr();
-  return STATE.calendar.find(d => d.date === today) || STATE.calendar[0];
+/* Compute specialty accuracy stats live from STATE.seen */
+function specialtyAccStats(){
+  const map = {};
+  QUESTIONS.forEach(q => {
+    const sv = STATE.seen[q.id];
+    const spec = q.specialty || "General Pediatrics";
+    if(!map[spec]) map[spec] = {attempts:0, correct:0, mastered:0, total:0};
+    map[spec].total++;
+    if(sv){
+      map[spec].attempts += sv.attempts;
+      map[spec].correct  += sv.correct;
+      if(isMastered(q.id)) map[spec].mastered++;
+    }
+  });
+  return map;
 }
 
 /* ---------------------------------------------------------------------------
-   SPECIALTY-BASED PLANNING
-   - Instead of "red zone" / "high yield", organize by clinical domain
-   - Each day focuses on a specialty with mixed P1/P2 concepts
+   PLAN POOL  (zone + priority combined)
 --------------------------------------------------------------------------- */
-function planPoolBySpecialty(specialty){
-  return QUESTIONS
-    .filter(q => !isMastered(q.id) && (q.specialty === specialty || q.topic === specialty))
-    .sort((a,b) => {
-      // Sort by priority (P1 > P2 > Tier1), then by frequency
-      const priorityOrder = {"P1": 0, "P2": 1, "Tier1": 2, "Gen": 3};
-      const aPri = priorityOrder[a.priority] || 3;
-      const bPri = priorityOrder[b.priority] || 3;
-      return (aPri - bPri) || ((b.freq_score||0) - (a.freq_score||0));
-    });
-}
-
-function getQuestionsBySpecialtyAndPriority(specialty, priority, n, exclude){
-  const ex = new Set(exclude);
-  return QUESTIONS
-    .filter(q => 
-      !isMastered(q.id) && 
-      !ex.has(q.id) && 
-      (q.specialty === specialty || q.topic === specialty) &&
-      q.priority === priority
-    )
-    .slice(0, n);
-}
-
-/* Update specialty stats after answering a question */
-function recordSpecialtyResult(id, correct){
-  const q = QBY[id];
-  if(!q || !q.specialty) return;
-  
-  const spec = STATE.specialtyStats[q.specialty] || {total: 0, mastered: 0, attempts: 0, correct: 0};
-  spec.total++;
-  spec.attempts++;
-  if(correct) {
-    spec.correct++;
-    if(isMastered(id)) spec.mastered++;
-  }
-  STATE.specialtyStats[q.specialty] = spec;
-}
-
-/* Get weakest specialty by accuracy */
-function getWeakestSpecialty(){
-  const stats = STATE.specialtyStats || {};
-  return Object.entries(stats)
-    .filter(([_, v]) => v.attempts >= 5)
-    .map(([spec, v]) => ({spec, acc: v.correct / v.attempts}))
-    .sort((a,b) => a.acc - b.acc)[0];
-}
 function planPool(){
-  // questions not mastered, ordered by zone priority then by frequency
-  const order={red:0,high_yield:1,trap:2,common:3};
+  // Priority order: P1(red) > P2(high_yield) > Tier2 > Tier1
+  const zoneOrder = {red:0, high_yield:1, trap:2, common:3};
+  const prioOrder = {P1:0, P2:1, Tier2:2, Tier1:3};
   return QUESTIONS
-    .filter(q=>!isMastered(q.id))
-    .sort((a,b)=>(order[a.zone]-order[b.zone]) || ((b.freq_score||0)-(a.freq_score||0)));
+    .filter(q => !isMastered(q.id))
+    .sort((a,b) =>
+      (prioOrder[a.priority]??3) - (prioOrder[b.priority]??3) ||
+      (zoneOrder[a.zone]??3)     - (zoneOrder[b.zone]??3)     ||
+      (b.freq_score||0)          - (a.freq_score||0)
+    );
 }
 function remainingDays(){
-  const d=daysBetween(todayStr(),FINISH_BY);
-  return Math.max(1,d+1);
+  const d = daysBetween(todayStr(), FINISH_BY);
+  return Math.max(1, d + 1);
 }
 function dailyQuota(){
-  // adaptive: spread remaining unmastered "new" questions across remaining days
-  const newLeft = planPool().filter(q=>!(STATE.seen[q.id])).length;
-  const days=remainingDays();
-  const base=Math.ceil(newLeft/days);
-  return Math.max(base, 8); // never trivially small while material remains
-}
-function pickNew(n,exclude){
-  const ex=new Set(exclude);
-  // unseen questions only, zone-priority ordered
-  return planPool().filter(q=>!STATE.seen[q.id]&&!ex.has(q.id)).slice(0,n);
-}
-function pickZoneNew(zone,n,exclude){
-  // unseen questions from a specific zone
-  const ex=new Set(exclude);
-  return planPool().filter(q=>q.zone===zone&&!STATE.seen[q.id]&&!ex.has(q.id)).slice(0,n);
-}
-function pickZone(zone,n,exclude){
-  // any unmastered question from a zone (seen or unseen) — used for review groups
-  const ex=new Set(exclude);
-  return planPool().filter(q=>q.zone===zone&&!ex.has(q.id)).slice(0,n);
+  const newLeft = planPool().filter(q => !STATE.seen[q.id]).length;
+  const days = remainingDays();
+  return Math.max(8, Math.ceil(newLeft / days));
 }
 
+/* Pick n unseen questions from a given specialty, sorted by priority+zone */
+function pickSpecialtyUnseen(spec, n, exclude){
+  const ex = new Set(exclude);
+  return planPool()
+    .filter(q => q.specialty === spec && !STATE.seen[q.id] && !ex.has(q.id))
+    .slice(0, n);
+}
+/* Pick n unseen questions from a given specialty × priority tier */
+function pickSpecialtyPrio(spec, prio, n, exclude){
+  const ex = new Set(exclude);
+  return planPool()
+    .filter(q => q.specialty === spec && q.priority === prio && !STATE.seen[q.id] && !ex.has(q.id))
+    .slice(0, n);
+}
+/* Pick any unmastered (seen or unseen) from a given specialty */
+function pickSpecialtyAny(spec, n, exclude){
+  const ex = new Set(exclude);
+  return planPool()
+    .filter(q => q.specialty === spec && !ex.has(q.id))
+    .slice(0, n);
+}
+/* Fill remaining quota from any specialty, unseen, priority-ordered */
+function pickNew(n, exclude){
+  const ex = new Set(exclude);
+  return planPool().filter(q => !STATE.seen[q.id] && !ex.has(q.id)).slice(0, n);
+}
+
+/* ---------------------------------------------------------------------------
+   BUILD DAY PLAN  (specialty-aware, zone-informed)
+--------------------------------------------------------------------------- */
 function buildDayPlan(mode){
   const day = todayStr();
   const saved = STATE.dayLog[day];
-  
-  // Reuse today's frozen plan if it already exists and isn't archived
+
+  // Reuse frozen plan if already built for today
   if(saved && saved.groups && !saved.archived && saved.day === day){
     return _planFromSaved(saved, mode);
   }
-  
-  // Ensure calendar exists
-  if(!STATE.calendar) buildStudyCalendar();
-  const calendarDay = getTodayCalendarDay();
-  const specialty = calendarDay.specialty;
-  
-  // --- Build the full canonical plan (Full Day + all other modes) ---
-  const used = [];
+
+  // Determine today's specialty from the 35-day schedule
+  const schedEntry  = getTodayScheduleEntry();
+  const specialty   = schedEntry.spec;
+  const specMeta    = SPECIALTY_META[specialty] || { icon:"📋", color:"spec-gen" };
+
+  const used   = [];
   const groups = [];
-  
-  // 1. Memory review (spaced repetition due) — always full set
+
+  // ── 1. Memory Review (spaced repetition due) ─────────────────────────
   const sr = dueForReview().slice(0, 25);
   sr.forEach(q => used.push(q.id));
   if(sr.length) groups.push({
     key: "memory",
     title: "Memory Review",
-    sub: "Spaced-repetition items due today",
+    sub:  "Spaced-repetition items due today — do these first",
     icon: "🧠",
     items: sr
   });
-  
-  // 2. Wrong loop (mistakes from previous days)
+
+  // ── 2. Wrong Loop (prior-day mistakes) ───────────────────────────────
   const wl = pendingWrongLoop().filter(q => !used.includes(q.id)).slice(0, 30);
   wl.forEach(q => used.push(q.id));
   if(wl.length) groups.push({
     key: "wrongloop",
     title: "Wrong Loop",
-    sub: "Questions you missed earlier — master them now",
+    sub:  "Questions you missed on a previous day — master them now",
     icon: "🔁",
     items: wl
   });
-  
-  // 3. Today's Specialty Focus - P1 priority questions (must-master)
-  const specP1 = getQuestionsBySpecialtyAndPriority(specialty, "P1", 25, used);
+
+  // ── 3. Specialty Focus P1 — must-master for today's domain ───────────
+  const specP1 = pickSpecialtyPrio(specialty, "P1", 20, used);
   specP1.forEach(q => used.push(q.id));
   if(specP1.length) groups.push({
-    key: "specialty_p1",
-    title: `🔴 ${specialty} (P1)`,
-    sub: "High-priority must-master concepts for today's focus",
-    icon: "🔴",
+    key:   "spec_p1",
+    title: `${specMeta.icon} ${specialty} — Must Master`,
+    sub:   `${specP1.length} P1 priority questions · highest-frequency exam material`,
+    icon:  specMeta.icon,
+    specialty,
     items: specP1
   });
-  
-  // 4. Today's Specialty - P2 high-yield concepts
-  const specP2 = getQuestionsBySpecialtyAndPriority(specialty, "P2", 15, used);
+
+  // ── 4. Specialty Focus P2 — high-yield supplemental ──────────────────
+  const specP2 = pickSpecialtyPrio(specialty, "P2", 12, used);
   specP2.forEach(q => used.push(q.id));
   if(specP2.length) groups.push({
-    key: "specialty_p2",
-    title: `⚡ ${specialty} (P2)`,
-    sub: "High-yield dense concepts for this specialty",
-    icon: "⚡",
+    key:   "spec_p2",
+    title: `${specMeta.icon} ${specialty} — High Yield`,
+    sub:   `${specP2.length} P2 questions · dense concepts and decision points`,
+    icon:  specMeta.icon,
+    specialty,
     items: specP2
   });
-  
-  // 5. Concept training (if any)
-  const concepts = QUESTIONS
-    .filter(q => !isMastered(q.id) && !used.includes(q.id) && q.question_type === "concept")
-    .slice(0, 5);
-  concepts.forEach(q => used.push(q.id));
-  if(concepts.length) groups.push({
-    key: "concepts",
-    title: "💡 Concept Training",
-    sub: "Build foundational understanding",
-    icon: "💡",
-    items: concepts
+
+  // ── 5. Seen-but-unmastered from this specialty ────────────────────────
+  const specReview = pickSpecialtyAny(specialty, 8, used)
+    .filter(q => STATE.seen[q.id]);
+  specReview.forEach(q => used.push(q.id));
+  if(specReview.length) groups.push({
+    key:   "spec_review",
+    title: `🔄 ${specialty} — Reinforce`,
+    sub:   `${specReview.length} previously seen questions to drill until mastered`,
+    icon:  "🔄",
+    specialty,
+    items: specReview
   });
-  
-  // 6. Image-based questions (visual learning)
-  const images = QUESTIONS
-    .filter(q => !isMastered(q.id) && !used.includes(q.id) && q.question_image && !q.snapshots)
-    .slice(0, 5);
-  images.forEach(q => used.push(q.id));
-  if(images.length) groups.push({
-    key: "images",
-    title: "📸 Visual Questions",
-    sub: "Learn from imaging & clinical photos",
-    icon: "📸",
-    items: images
+
+  // ── 6. New cross-specialty questions to hit daily quota ───────────────
+  const quota      = dailyQuota();
+  const specTotal  = specP1.length + specP2.length;
+  const fillCount  = Math.max(0, quota - specTotal);
+  const fill       = pickNew(fillCount, used);
+  fill.forEach(q => used.push(q.id));
+  if(fill.length) groups.push({
+    key:  "new",
+    title: "✨ New Questions",
+    sub:  `${fill.length} new questions across all specialties to hit today's target of ${quota}`,
+    icon: "✨",
+    items: fill
   });
-  
-  // 7. Unseen core questions to hit daily quota
-  const quota = STUDY_MODES[mode || "full"].core || 50;
-  const remainingQuota = Math.max(0, quota - specP1.length - specP2.length - concepts.length - images.length);
-  const core = QUESTIONS
-    .filter(q => !isMastered(q.id) && !STATE.seen[q.id] && !used.includes(q.id))
-    .slice(0, remainingQuota);
-  core.forEach(q => used.push(q.id));
-  if(core.length) groups.push({
-    key: "core",
-    title: "📚 Core Questions",
-    sub: `${core.length} new questions across all specialties`,
-    icon: "📚",
-    items: core
-  });
-  
-  // Prepare mode-specific subsets
-  const onCallIds = new Set([
-    ...specP1.slice(0, 10).map(q => q.id),
-    ...QUESTIONS.filter(q => q.priority === "trap" && !used.includes(q.id)).slice(0, 5).map(q => q.id)
-  ]);
-  
-  const busySecondaryIds = new Set(specP2.slice(0, 5).map(q => q.id));
-  
+
+  // Busy Day: only memory + wrongloop + first 15 spec_p1
+  const busyP1Ids = specP1.slice(0, 15).map(q => q.id);
+
   const fudul = fudulSessionForToday();
-  // FREEZE this plan (mode-independent)
+
+  // ── FREEZE ────────────────────────────────────────────────────────────
   STATE.dayLog[day] = {
     day,
     specialty,
-    calendarDay: calendarDay.day,
-    fudul, used,
-    onCallIds: [...onCallIds],
-    busySecondaryIds: [...busySecondaryIds],
+    schedDay: schedEntry.day,
+    landmark: schedEntry.landmark || null,
+    fudul,
+    used,
+    busyP1Ids,
     done: (saved && saved.done) || {},
     groups: groups.map(g => ({
-      key: g.key,
-      title: g.title,
-      sub: g.sub,
-      icon: g.icon,
-      itemIds: g.items.map(q => q.id)
+      key:       g.key,
+      title:     g.title,
+      sub:       g.sub,
+      icon:      g.icon,
+      specialty: g.specialty || null,
+      itemIds:   g.items.map(q => q.id)
     }))
   };
   saveState();
   return _planFromSaved(STATE.dayLog[day], mode);
 }
 
-/* Reconstruct a plan object from a frozen dayLog entry, applying mode-specific filtering */
+/* Reconstruct a plan object from a frozen dayLog entry, applying mode filter */
 function _planFromSaved(saved, mode){
-  const day = saved.day;
   mode = mode || "full";
-  
-  // Define which groups to include per mode
-  const fullModeKeys = new Set(["memory", "wrongloop", "specialty_p1", "specialty_p2", "concepts", "images", "core"]);
-  const busyModeKeys = new Set(["memory", "wrongloop", "specialty_p1"]);
-  const onCallModeKeys = new Set(["memory", "specialty_p1"]);
-  
-  const modeMap = {
-    full: fullModeKeys,
-    busy: busyModeKeys,
-    oncall: onCallModeKeys
-  };
-  
-  const allowedKeys = modeMap[mode] || fullModeKeys;
-  const onCallIds = new Set(saved.onCallIds || []);
-  const busySecondaryIds = new Set(saved.busySecondaryIds || []);
-  
+  const busyKeys  = new Set(["memory","wrongloop","spec_p1"]);
+  const busyP1Ids = new Set(saved.busyP1Ids || []);
+
   const groups = saved.groups
-    .filter(g => allowedKeys.has(g.key))
+    .filter(g => mode !== "busy" || busyKeys.has(g.key))
     .map(g => {
       let ids = g.itemIds;
-      
-      // For On-Call Min, further filter to high-priority + traps
-      if(mode === "oncall" && g.key === "specialty_p1"){
-        ids = ids.filter(id => onCallIds.has(id)).slice(0, 10);
+      // Busy Day: cap spec_p1 to pre-selected 15
+      if(mode === "busy" && g.key === "spec_p1"){
+        ids = ids.filter(id => busyP1Ids.has(id));
       }
-      
-      // For Busy Day, cap P2 to 5-10 items
-      if(mode === "busy" && g.key === "specialty_p2"){
-        ids = ids.filter(id => busySecondaryIds.has(id)).slice(0, 8);
-      }
-      
+      // Relabel for busy
+      const title = (mode === "busy" && g.key === "spec_p1")
+        ? g.title.replace("— Must Master","— Light Session") : g.title;
       return {
-        key: g.key,
-        title: g.title,
-        sub: g.sub,
-        icon: g.icon,
-        items: ids.map(id => QBY[id]).filter(Boolean)
+        key:       g.key,
+        title,
+        sub:       g.sub,
+        icon:      g.icon,
+        specialty: g.specialty || null,
+        items:     ids.map(id => QBY[id]).filter(Boolean)
       };
     })
     .filter(g => g.items.length > 0);
-  
+
   return {
-    day,
+    day:       saved.day,
     mode,
     specialty: saved.specialty,
+    landmark:  saved.landmark || null,
+    schedDay:  saved.schedDay || null,
     groups,
-    fudul: saved.fudul || fudulSessionForToday(),
-    used: saved.used || [],
-    done: saved.done || {}
+    fudul:     saved.fudul || fudulSessionForToday(),
+    used:      saved.used || [],
+    done:      saved.done || {}
   };
 }
 
@@ -903,6 +883,14 @@ function diffDot(q){return `<span class="dot-diff ${q.difficulty}" title="${DIFF
 function tagPills(q){
   return (q.tags||[]).filter(t=>t!==q.zone).map(t=>`<span class="pill ${t}">${ZONE_LABEL[t]||t}</span>`).join("");
 }
+function specialtyPill(spec){
+  const m = SPECIALTY_META[spec] || {icon:"📋", color:"spec-gen"};
+  return `<span class="pill spec ${m.color}">${m.icon} ${esc(spec)}</span>`;
+}
+function priorityPill(prio){
+  const map = {P1:"pill-p1",P2:"pill-p2",Tier1:"pill-tier1",Tier2:"pill-tier2"};
+  return `<span class="pill ${map[prio]||'common'}">${esc(prio)}</span>`;
+}
 
 /* ---------- progress maths ---------- */
 function stats(){
@@ -917,7 +905,8 @@ function stats(){
     const qs=QUESTIONS.filter(q=>q.zone===z);
     byZone[z]={total:qs.length,mastered:qs.filter(q=>isMastered(q.id)).length};
   });
-  return {total,seen,mastered,acc,attempts,byZone,
+  const bySpecialty = specialtyAccStats();
+  return {total,seen,mastered,acc,attempts,byZone,bySpecialty,
     pct:Math.round(mastered/total*100), daysLeft:daysBetween(todayStr(),EXAM_DATE)};
 }
 
@@ -931,17 +920,31 @@ function renderDashboard(){
   const coach=coachAdvice(s);
   const el=$("#view-dashboard");
 
-  // Detect stale plan: any dayLog entry with groups that isn't today's
+  // Detect stale plan
   const today=todayStr();
   const hasStale=Object.entries(STATE.dayLog||{}).some(([d,log])=>
     log&&log.groups&&!log.archived&&d!==today);
   const hasTodayPlan=STATE.dayLog&&STATE.dayLog[today]&&STATE.dayLog[today].groups&&!STATE.dayLog[today].archived;
 
+  // Today's schedule entry
+  const sched = getTodayScheduleEntry();
+  const specMeta = SPECIALTY_META[sched.spec] || {icon:"📋", color:"spec-gen"};
+
+  // Top 5 specialties by question count for mastery display
+  const specList = SPECIALTIES.map(sp => {
+    const b = s.bySpecialty[sp] || {total:0,mastered:0,attempts:0,correct:0};
+    const qs = QUESTIONS.filter(q=>q.specialty===sp);
+    const tot = qs.length;
+    const mast = qs.filter(q=>isMastered(q.id)).length;
+    const acc = b.attempts ? Math.round(b.correct/b.attempts*100) : null;
+    return {sp, tot, mast, acc, pct: tot ? Math.round(mast/tot*100) : 0};
+  }).sort((a,b) => b.tot - a.tot).slice(0,8);
+
   el.innerHTML=`
   <div class="page-head">
     <div class="eyebrow">${new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}</div>
     <h1>Today's Focus</h1>
-    <p>${s.daysLeft} days until the exam (July 7, 2026). Plan finishes by July 6. Keep the streak — skipped days are absorbed into the days ahead.</p>
+    <p>${s.daysLeft} days until the exam (July 7, 2026). Plan finishes by July 6. Skipped days are absorbed ahead.</p>
   </div>
 
   ${hasStale||!hasTodayPlan?`
@@ -952,6 +955,17 @@ function renderDashboard(){
     </div>
     <button class="btn" onclick="forceNewDay()" style="flex-shrink:0">Generate today's plan →</button>
   </div>`:""}
+
+  <!-- Today's Specialty Banner -->
+  <div class="specialty-banner spec-banner-${specMeta.color}" style="margin-bottom:20px">
+    <div class="spec-banner-icon">${specMeta.icon}</div>
+    <div class="spec-banner-body">
+      <div class="spec-banner-eyebrow">Day ${sched.day} of 35 · Today's specialty focus</div>
+      <div class="spec-banner-title">${esc(sched.spec)}</div>
+      ${sched.landmark?`<div class="spec-banner-landmark">${esc(sched.landmark)}</div>`:""}
+    </div>
+    <button class="btn sm" onclick="switchView('plan')" style="flex-shrink:0;align-self:center">Start studying →</button>
+  </div>
 
   <div class="stat-row">
     <div class="card stat"><div class="k">Questions seen</div><div class="v">${s.seen}<small>/${s.total}</small></div>
@@ -974,13 +988,13 @@ function renderDashboard(){
       <div class="grid" style="grid-template-columns:1fr 1fr">
         <div class="card stat" style="cursor:pointer" onclick="startDayMode('full')">
           <div class="k">Full Day Mode</div>
-          <div class="v" style="font-size:24px;margin-top:8px">Complete plan</div>
-          <p style="color:var(--ink-soft);font-size:14px;margin-top:6px">Memory review · wrong loop · red zone · high-yield · new</p>
+          <div class="v" style="font-size:22px;margin-top:6px">Complete plan</div>
+          <p style="color:var(--ink-soft);font-size:13.5px;margin-top:6px">Memory · wrong loop · specialty focus · new</p>
         </div>
         <div class="card stat" style="cursor:pointer" onclick="startDayMode('busy')">
           <div class="k">Busy Day Mode</div>
-          <div class="v" style="font-size:24px;margin-top:8px">Light session</div>
-          <p style="color:var(--ink-soft);font-size:14px;margin-top:6px">Memory review · wrong loop · 10–20 red zone</p>
+          <div class="v" style="font-size:22px;margin-top:6px">Light session</div>
+          <p style="color:var(--ink-soft);font-size:13.5px;margin-top:6px">Memory · wrong loop · 15 P1 specialty Qs</p>
         </div>
       </div>
     </div>
@@ -994,14 +1008,19 @@ function renderDashboard(){
           <div style="display:flex;justify-content:space-between"><span>⭐ Saved for review</span><b>${Object.keys(STATE.review).length}</b></div>
         </div>
       </div>
+
       <div class="card stat" style="margin-top:18px">
-        <div class="k">Zone mastery</div>
-        <div style="margin-top:14px;display:flex;flex-direction:column;gap:13px">
-          ${["red","high_yield","trap","common"].map(z=>{
-            const b=s.byZone[z];const p=b.total?Math.round(b.mastered/b.total*100):0;
-            return `<div><div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:5px">
-              <span>${zonePill({zone:z})}</span><span style="color:var(--ink-soft)">${b.mastered}/${b.total}</span></div>
-              <div class="progress-bar"><span style="width:${p}%"></span></div></div>`;
+        <div class="k">Specialty mastery</div>
+        <div style="margin-top:14px;display:flex;flex-direction:column;gap:11px">
+          ${specList.map(b=>{
+            const m = SPECIALTY_META[b.sp]||{icon:"📋"};
+            return `<div>
+              <div style="display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:4px;align-items:center">
+                <span>${m.icon} <b>${esc(b.sp)}</b></span>
+                <span style="color:var(--ink-soft)">${b.mast}/${b.tot}${b.acc!==null?` · ${b.acc}%`:''}</span>
+              </div>
+              <div class="progress-bar"><span style="width:${b.pct}%"></span></div>
+            </div>`;
           }).join("")}
         </div>
       </div>
@@ -1042,22 +1061,25 @@ function coachAdvice(s){
   // targeted advice
   if(wl>0) advice.push(`Clear your <b>wrong loop (${wl})</b> first today — repeated misses are where points leak.`);
   if(due>0) advice.push(`<b>${due}</b> spaced-repetition items are due — doing them today locks them into long-term memory.`);
-  // weakest zone by accuracy
+  // weakest specialty by accuracy (min 5 attempts)
+  const specStats = specialtyAccStats();
+  const weakSpecs = Object.entries(specStats)
+    .filter(([,v])=>v.attempts>=5)
+    .map(([sp,v])=>({sp, acc: v.correct/v.attempts}))
+    .sort((a,b)=>a.acc-b.acc);
+  if(weakSpecs.length && weakSpecs[0].acc<0.70){
+    const m = SPECIALTY_META[weakSpecs[0].sp]||{icon:"📋"};
+    advice.push(`Weakest specialty: ${m.icon} <b>${weakSpecs[0].sp}</b> (${Math.round(weakSpecs[0].acc*100)}%). Filter the Question Bank to this specialty and drill it.`);
+  }
+  // weakest zone fallback
   const zoneAcc=["red","high_yield","trap","common"].map(z=>{
     const qs=QUESTIONS.filter(q=>q.zone===z&&STATE.seen[q.id]);
     const at=qs.reduce((a,q)=>a+STATE.seen[q.id].attempts,0);
     const co=qs.reduce((a,q)=>a+STATE.seen[q.id].correct,0);
     return {z,acc:at?co/at:1,seen:qs.length};
   }).filter(x=>x.seen>=3).sort((a,b)=>a.acc-b.acc);
-  if(zoneAcc.length&&zoneAcc[0].acc<0.7){
-    advice.push(`Weakest area: <b>${ZONE_LABEL[zoneAcc[0].z]}</b> (${Math.round(zoneAcc[0].acc*100)}%). Re-read those explanations and the page snapshots.`);
-  }
-  // weakest category
-  const catMap={};
-  QUESTIONS.forEach(q=>{const sv=STATE.seen[q.id];if(sv){const c=catMap[q.category]||{a:0,co:0};c.a+=sv.attempts;c.co+=sv.correct;catMap[q.category]=c;}});
-  const cats=Object.entries(catMap).filter(([,v])=>v.a>=4).map(([k,v])=>({k,acc:v.co/v.a})).sort((a,b)=>a.acc-b.acc);
-  if(cats.length&&cats[0].acc<0.65){
-    advice.push(`Subject to drill: <b>${cats[0].k}</b> (${Math.round(cats[0].acc*100)}%). Filter the Question Bank to it.`);
+  if(zoneAcc.length&&zoneAcc[0].acc<0.65&&weakSpecs.length===0){
+    advice.push(`Weakest zone: <b>${ZONE_LABEL[zoneAcc[0].z]}</b> (${Math.round(zoneAcc[0].acc*100)}%). Re-read the explanations and source snapshots.`);
   }
   if(!onTrack){
     advice.push(`You're slightly behind pace (need ~${pace}/day). A couple of Full Day sessions will catch you up — the plan already front-loads red zone.`);
@@ -1084,16 +1106,26 @@ function renderPlan(){
   const doneQ=allIds.filter(id=>done[id]).length;
   const remaining=totalQ-doneQ;
   const pct=totalQ?Math.round(doneQ/totalQ*100):0;
-  // count genuinely new (unseen) questions in today's plan
   const newTodayCount=plan.groups
-    .filter(g=>['red','high_yield','new'].includes(g.key))
-    .flatMap(g=>g.items).length;
+    .filter(g=>['spec_p1','spec_p2','new'].includes(g.key))
+    .flatMap(g=>g.items).filter(q=>!STATE.seen[q.id]).length;
+  const specMeta=SPECIALTY_META[plan.specialty]||{icon:"\u{1f4cb}",color:"spec-gen"};
 
   el.innerHTML=`
   <div class="page-head">
-    <div class="eyebrow">Adaptive Plan · ${remainingDays()} study days to finish</div>
+    <div class="eyebrow">Adaptive Plan \u00b7 ${remainingDays()} study days to finish</div>
     <h1>Daily Plan</h1>
-    <p>Auto-balanced toward your July 6 finish. Skip a day and the remaining load redistributes across the days ahead so you still finish on time.</p>
+    <p>Auto-balanced toward your July 6 finish. Skipped days redistribute the load forward.</p>
+  </div>
+
+  <div class="specialty-banner spec-banner-${specMeta.color}" style="margin-bottom:18px">
+    <div class="spec-banner-icon">${specMeta.icon}</div>
+    <div class="spec-banner-body">
+      <div class="spec-banner-eyebrow">Day ${plan.schedDay||'\u2014'} of 35 \u00b7 Today\u2019s specialty</div>
+      <div class="spec-banner-title">${esc(plan.specialty||'\u2014')}</div>
+      ${plan.landmark?`<div class="spec-banner-landmark">${esc(plan.landmark)}</div>`:""}
+    </div>
+    <button class="btn ghost sm" onclick="document.getElementById('cal-section').scrollIntoView({behavior:'smooth'})" style="flex-shrink:0;align-self:center">\uD83D\uDCC5 View schedule</button>
   </div>
 
   <div style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px">
@@ -1101,20 +1133,20 @@ function renderPlan(){
       <button class="${currentPlanMode==='full'?'active':''}" onclick="setPlanMode('full')">Full Day</button>
       <button class="${currentPlanMode==='busy'?'active':''}" onclick="setPlanMode('busy')">Busy Day</button>
     </div>
-    <div style="color:var(--ink-soft);font-size:14.5px"><b style="color:var(--ink)">${newTodayCount} new</b> · ${totalQ} total today</div>
+    <div style="color:var(--ink-soft);font-size:14.5px"><b style="color:var(--ink)">${newTodayCount} new</b> \u00b7 ${totalQ} total today</div>
   </div>
 
   <div class="card stat" style="margin-bottom:18px">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
       <div>
-        <div class="k">Today's progress</div>
-        <div class="v" style="font-size:26px;margin-top:4px">${doneQ}<small>/${totalQ}</small> <span style="font-size:15px;color:var(--ink-soft)">· ${remaining} left</span></div>
+        <div class="k">Today\u2019s progress</div>
+        <div class="v" style="font-size:26px;margin-top:4px">${doneQ}<small>/${totalQ}</small> <span style="font-size:15px;color:var(--ink-soft)">\u00b7 ${remaining} left</span></div>
       </div>
       <div style="display:flex;gap:9px">
         ${remaining>0
-          ? `<button class="btn" onclick="resumeToday()">${doneQ>0?'Resume where I left off →':'Start today’s plan →'}</button>`
-          : `<span class="pill common">✓ All done — great work</span>`}
-        <button class="btn ghost sm" onclick="confirmRegenToday()" title="Rebuild today's plan from scratch">↻ New plan</button>
+          ? `<button class="btn" onclick="resumeToday()">${doneQ>0?'Resume where I left off \u2192':'Start today\u2019s plan \u2192'}</button>`
+          : `<span class="pill common">\u2713 All done \u2014 great work</span>`}
+        <button class="btn ghost sm" onclick="confirmRegenToday()" title="Rebuild today's plan from scratch">\u21bb New plan</button>
       </div>
     </div>
     <div class="progress-bar" style="margin-top:14px"><span style="width:${pct}%"></span></div>
@@ -1124,19 +1156,19 @@ function renderPlan(){
   <div class="card" style="margin-bottom:18px;padding:18px 20px;border-left:4px solid var(--gold)">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap">
       <div style="flex:1;min-width:0">
-        <div style="font-weight:700;font-size:16px;color:var(--gold);margin-bottom:4px">⭐ ${esc(plan.fudul.label)}</div>
+        <div style="font-weight:700;font-size:16px;color:var(--gold);margin-bottom:4px">\u2b50 ${esc(plan.fudul.label)}</div>
         <div style="font-size:13.5px;color:var(--ink-soft);margin-bottom:10px">${esc(plan.fudul.note)}</div>
         <div class="progress-bar" style="height:7px"><span style="width:${plan.fudul.pct}%"></span></div>
         <div style="font-size:12px;color:var(--ink-soft);margin-top:5px">${plan.fudul.doneSoFar} of ${plan.fudul.total} questions completed</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;align-items:flex-end">
-        <a href="${plan.fudul.url}" target="_blank" rel="noopener" class="btn ghost sm">Open fudoul.com →</a>
+        <a href="${plan.fudul.url}" target="_blank" rel="noopener" class="btn ghost sm">Open fudoul.com \u2192</a>
         ${plan.fudul.doneSoFar<plan.fudul.total?
           `<button class="btn sm" onclick="toggleFudulDone()" style="background:${plan.fudul.doneToday?'var(--green)':'var(--gold)'};border-color:${plan.fudul.doneToday?'var(--green)':'var(--gold)'}">
-            ${plan.fudul.doneToday?'✓ Done today (tap to undo)':'Mark today done ('+plan.fudul.from+'–'+plan.fudul.to+')'}
+            ${plan.fudul.doneToday?'\u2713 Done today (tap to undo)':'Mark today done ('+plan.fudul.from+'\u2013'+plan.fudul.to+')'}
           </button>`
-          :`<span class="pill common">✓ All ${plan.fudul.total} done!</span>`}
-        ${plan.fudul.doneSoFar>0?`<button class="btn ghost sm" style="font-size:12px;color:var(--ink-soft)" onclick="resetFudul()">↩ Reset</button>`:''}
+          :`<span class="pill common">\u2713 All ${plan.fudul.total} done!</span>`}
+        ${plan.fudul.doneSoFar>0?`<button class="btn ghost sm" style="font-size:12px;color:var(--ink-soft)" onclick="resetFudul()">\u21a9 Reset</button>`:''}
       </div>
     </div>
   </div>`:""}
@@ -1148,28 +1180,94 @@ function renderPlan(){
     const complete=gleft===0&&ids.length>0;
     return `
     <div class="task-group">
-      <div class="tg-head"><h3>${g.icon} ${g.title}</h3><span class="count">· ${gd} of ${ids.length} done</span></div>
+      <div class="tg-head"><h3>${g.icon} ${g.title}</h3><span class="count">\u00b7 ${gd} of ${ids.length} done</span></div>
       <div style="color:var(--ink-soft);font-size:14px;margin:-6px 0 12px">${g.sub}</div>
       <div class="tasklist">
-        ${ids.length? `
+        ${ids.length?`
         <div class="task ${complete?'done':''}">
-          <div class="check ${complete?'on':''}">${complete?'✓':''}</div>
+          <div class="check ${complete?'on':''}">${complete?'\u2713':''}</div>
           <div class="t-body">
             <div class="t-title">${g.title} set</div>
-            <div class="t-sub">${gd} completed · ${gleft} remaining</div>
+            <div class="t-sub">${gd} completed \u00b7 ${gleft} remaining</div>
           </div>
           ${complete
-            ? `<button class="btn ghost sm t-go" onclick='runGroupResume(${JSON.stringify(g.key)}, ${JSON.stringify(ids)})'>Review again</button>`
-            : `<button class="btn sm t-go" onclick='runGroupResume(${JSON.stringify(g.key)}, ${JSON.stringify(ids)})'>${gd>0?'Continue →':'Study →'}</button>`}
-        </div>`:`<div style="color:var(--ink-soft);font-size:14px;padding:8px 2px">Nothing pending here today. 🎉</div>`}
+            ?`<button class="btn ghost sm t-go" onclick='runGroupResume(${JSON.stringify(g.key)}, ${JSON.stringify(ids)})'>Review again</button>`
+            :`<button class="btn sm t-go" onclick='runGroupResume(${JSON.stringify(g.key)}, ${JSON.stringify(ids)})'>${gd>0?'Continue \u2192':'Study \u2192'}</button>`}
+        </div>`:`<div style="color:var(--ink-soft);font-size:14px;padding:8px 2px">Nothing pending here today. \uD83C\uDF89</div>`}
       </div>
     </div>`;}).join("")}
 
   <div style="margin-top:10px">
-    <button class="btn" onclick="resumeToday()">${remaining>0?'Continue entire plan →':'Review entire plan →'}</button>
+    <button class="btn" onclick="resumeToday()">${remaining>0?'Continue entire plan \u2192':'Review entire plan \u2192'}</button>
   </div>
 
+  <div class="section-divider" style="margin-top:28px" id="cal-section"><span>35-day study calendar</span></div>
+  ${renderCalendar()}
+
   ${renderPastDaysSlider()}`;
+}
+/* ============================================================================
+   35-DAY STUDY CALENDAR
+   ============================================================================ */
+function renderCalendar(){
+  const PLAN_START = "2026-06-02";
+  const today = todayStr();
+
+  const weeks = [];
+  let week = [];
+  STUDY_SCHEDULE.forEach((entry, i) => {
+    const dateObj = new Date(PLAN_START + "T12:00:00");
+    dateObj.setDate(dateObj.getDate() + entry.day - 1);
+    const dateStr = dateObj.toISOString().slice(0,10);
+    const isToday = dateStr === today;
+    const isPast  = dateStr < today;
+    const log = STATE.dayLog[dateStr];
+    const allIds = log && log.groups ? log.groups.flatMap(g=>g.itemIds||[]) : [];
+    const doneIds = log && log.done ? allIds.filter(id=>log.done[id]) : [];
+    const pct = allIds.length ? Math.round(doneIds.length/allIds.length*100) : 0;
+    const complete = allIds.length>0 && doneIds.length===allIds.length;
+    const m = SPECIALTY_META[entry.spec]||{icon:"📋",color:"spec-gen"};
+    const dayLabel = dateObj.toLocaleDateString(undefined,{month:'short',day:'numeric'});
+
+    week.push({...entry, dateStr, isToday, isPast, pct, complete, allIds, doneIds, m, dayLabel});
+    if(week.length===7 || i===STUDY_SCHEDULE.length-1){
+      weeks.push(week);
+      week=[];
+    }
+  });
+
+  const calHTML = weeks.map((wk, wi) => `
+    <div class="cal-week">
+      ${wk.map(d=>`
+        <div class="cal-cell ${d.isToday?'today':''} ${d.isPast?'past':''} ${d.complete?'done':''} spec-cell-${d.m.color}"
+             title="Day ${d.day}: ${d.spec}${d.landmark?' · '+d.landmark:''}\n${d.dayLabel}${d.allIds.length?' · '+d.doneIds.length+'/'+d.allIds.length+' done':''}">
+          <div class="cal-daynum">${d.day}</div>
+          <div class="cal-icon">${d.m.icon}</div>
+          <div class="cal-date">${d.dayLabel}</div>
+          ${d.landmark?`<div class="cal-lm">${d.landmark.split(' ').slice(0,2).join(' ')}</div>`:''}
+          ${d.allIds.length>0?`
+            <div class="cal-prog">
+              <div class="cal-prog-bar" style="width:${d.pct}%"></div>
+            </div>`:''}
+          ${d.isToday?'<div class="cal-today-dot"></div>':''}
+          ${d.complete?'<div class="cal-done-badge">\u2713</div>':''}
+        </div>`).join("")}
+    </div>`).join("");
+
+  // Legend
+  const seen = new Set(STUDY_SCHEDULE.map(e=>e.spec));
+  const legendHTML = [...seen].map(sp=>{
+    const m = SPECIALTY_META[sp]||{icon:"📋",color:"spec-gen"};
+    return `<div class="cal-legend-item">
+      <span class="cal-legend-swatch spec-cell-${m.color}">${m.icon}</span>
+      <span>${esc(sp)}</span>
+    </div>`;
+  }).join("");
+
+  return `<div class="cal-wrap">
+    <div class="cal-grid">${calHTML}</div>
+    <div class="cal-legend">${legendHTML}</div>
+  </div>`;
 }
 
 function renderPastDaysSlider(){
@@ -1366,10 +1464,12 @@ function renderRunner(){
         <div class="snaps" id="snaps">${figs.map(f=>`<img loading="lazy" src="${f}" alt="source page">`).join("")}</div>
       </div>
       <div class="srcline">
-        <b>Subject:</b> ${q.category}${q.topic?" · "+esc(q.topic):""} &nbsp;·&nbsp;
-        <b>Source:</b> ${q.source?esc(q.source):"—"} &nbsp;·&nbsp;
-        <b>From file:</b> ${q.year} Pediatric Part 1 (Maryam Altayeb) · Q${q.number} &nbsp;·&nbsp;
-        <b>Type:</b> ${ZONE_LABEL[q.zone]} &nbsp;·&nbsp; <b>Difficulty:</b> ${diffDot(q)} ${DIFF_LABEL[q.difficulty]}
+        <b>Subject:</b> ${q.category}${q.topic?" \u00b7 "+esc(q.topic):""} &nbsp;\u00b7&nbsp;
+        <b>Specialty:</b> ${specialtyPill(q.specialty||q.category)} &nbsp;\u00b7&nbsp;
+        <b>Priority:</b> ${priorityPill(q.priority||'P2')} &nbsp;\u00b7&nbsp;
+        <b>Source:</b> ${q.source?esc(q.source):"\u2014"} &nbsp;\u00b7&nbsp;
+        <b>From file:</b> ${q.year} Pediatric Part 1 (Maryam Altayeb) \u00b7 Q${q.number} &nbsp;\u00b7&nbsp;
+        <b>Type:</b> ${ZONE_LABEL[q.zone]} &nbsp;\u00b7&nbsp; <b>Difficulty:</b> ${diffDot(q)} ${DIFF_LABEL[q.difficulty]}
       </div>
     </div>
 
@@ -1458,21 +1558,22 @@ function finishRunner(){
 /* ============================================================================
    QUESTION BANK (browse + filter)
    ============================================================================ */
-let browseFilter={year:"",zone:"",diff:"",cat:"",q:"",status:"",sort:"priority"};
+let browseFilter={year:"",zone:"",spec:"",diff:"",cat:"",q:"",status:"",sort:"priority"};
 function renderBrowse(){
   const el=$("#view-browse");
   const cats=[...new Set(QUESTIONS.map(q=>q.category))].sort();
   const years=[...new Set(QUESTIONS.map(q=>String(q.year)))].sort();
-  const yearRange=years.length?`${years[0]}–${years[years.length-1]}`:"";
+  const yearRange=years.length?`${years[0]}\u2013${years[years.length-1]}`:"";
   el.innerHTML=`
   <div class="page-head">
-    <div class="eyebrow">${QUESTIONS.length} questions · ${yearRange}</div>
+    <div class="eyebrow">${QUESTIONS.length} questions \u00b7 ${yearRange}</div>
     <h1>Question Bank</h1>
-    <p>Every question is verbatim from the source files, with its explanation, source, zone, and difficulty. Filter and drill any slice.</p>
+    <p>Every question verbatim from the source files, with explanation, zone, specialty, and difficulty. Filter and drill any slice.</p>
   </div>
   <div class="filters">
-    <input id="fq" placeholder="Search text…" value="${esc(browseFilter.q)}">
+    <input id="fq" placeholder="Search text\u2026" value="${esc(browseFilter.q)}">
     <select id="fyear"><option value="">All years</option>${years.map(y=>`<option ${browseFilter.year==y?'selected':''}>${y}</option>`).join("")}</select>
+    <select id="fspec"><option value="">All specialties</option>${SPECIALTIES.map(s=>{const m=SPECIALTY_META[s]||{icon:''};return`<option value="${esc(s)}" ${browseFilter.spec==s?'selected':''}>${m.icon} ${esc(s)}</option>`;}).join("")}</select>
     <select id="fzone"><option value="">All zones</option>${["red","high_yield","trap","common"].map(z=>`<option value="${z}" ${browseFilter.zone==z?'selected':''}>${ZONE_LABEL[z]}</option>`).join("")}</select>
     <select id="fdiff"><option value="">Any difficulty</option>${["green","yellow","red"].map(d=>`<option value="${d}" ${browseFilter.diff==d?'selected':''}>${DIFF_LABEL[d]}</option>`).join("")}</select>
     <select id="fcat"><option value="">All subjects</option>${cats.map(c=>`<option ${browseFilter.cat==c?'selected':''}>${esc(c)}</option>`).join("")}</select>
@@ -1487,14 +1588,16 @@ function renderBrowse(){
   </div>
   <div class="card" id="qlist"></div>`;
   const bind=(id,key)=>{$("#"+id).oninput=$("#"+id).onchange=(e)=>{browseFilter[key]=e.target.value;drawList();};};
-  bind("fq","q");bind("fyear","year");bind("fzone","zone");bind("fdiff","diff");bind("fcat","cat");bind("fstatus","status");bind("fsort","sort");
+  bind("fq","q");bind("fyear","year");bind("fspec","spec");bind("fzone","zone");bind("fdiff","diff");bind("fcat","cat");bind("fstatus","status");bind("fsort","sort");
   drawList();
 }
 function filteredQuestions(){
   const f=browseFilter;
+  const prioOrder={P1:0,P2:1,Tier2:2,Tier1:3};
   const zoneOrder={red:0,high_yield:1,trap:2,common:3};
   let list=QUESTIONS.filter(q=>{
     if(f.year&&String(q.year)!==String(f.year))return false;
+    if(f.spec&&q.specialty!==f.spec)return false;
     if(f.zone&&q.zone!=f.zone)return false;
     if(f.diff&&q.difficulty!=f.diff)return false;
     if(f.cat&&q.category!=f.cat)return false;
@@ -1510,7 +1613,11 @@ function filteredQuestions(){
   if(f.sort==="year"){
     list=[...list].sort((a,b)=>String(a.year).localeCompare(String(b.year))||a.number-b.number);
   } else {
-    list=[...list].sort((a,b)=>(zoneOrder[a.zone]-zoneOrder[b.zone])||((b.freq_score||0)-(a.freq_score||0)));
+    list=[...list].sort((a,b)=>
+      ((prioOrder[a.priority]??3)-(prioOrder[b.priority]??3)) ||
+      ((zoneOrder[a.zone]??3)-(zoneOrder[b.zone]??3)) ||
+      ((b.freq_score||0)-(a.freq_score||0))
+    );
   }
   return list;
 }
@@ -1528,13 +1635,13 @@ function drawList(){
       const status=isMastered(q.id)?'<span class="pill common">✓ mastered</span>':s&&s.lastResult==='wrong'?'<span class="pill red">last wrong</span>':s?'<span class="pill common">seen</span>':'';
       return `<div class="qrow" style="gap:10px">
         <div style="flex:1;display:flex;gap:14px;align-items:flex-start;cursor:pointer;min-width:0" onclick='openOne("${q.id}")'>
-          <div class="qn">${q.year}·${q.number}</div>
+          <div class="qn">${q.year}\u00b7${q.number}</div>
           <div class="qt"><div class="txt">${esc(effectiveStem(q))}</div>
-            <div class="meta">${zonePill(q)} ${tagPills(q)} <span class="pill common">${diffDot(q)} ${DIFF_LABEL[q.difficulty]}</span>
-            <span style="color:var(--ink-soft);font-size:12.5px">${esc(q.category)}</span> ${status}
-            ${hasEdits(q.id)?'<span class="edit-badge">✏️ edited</span>':''}</div></div>
+            <div class="meta">${zonePill(q)} ${specialtyPill(q.specialty||q.category)} <span class="pill common">${diffDot(q)} ${DIFF_LABEL[q.difficulty]}</span>
+            ${status}
+            ${hasEdits(q.id)?'<span class="edit-badge">\u270f\ufe0f edited</span>':''}</div></div>
         </div>
-        <button class="editbtn" style="flex-shrink:0;align-self:center" onclick="openEditModal('${q.id}')">✏️</button>
+        <button class="editbtn" style="flex-shrink:0;align-self:center" onclick="openEditModal('${q.id}')">\u270f\ufe0f</button>
       </div>`;
     }).join("") + (list.length>300?`<div style="padding:14px;text-align:center;color:var(--ink-soft);font-size:14px">Showing first 300. Narrow the filters to see more.</div>`:"");
 }

@@ -261,6 +261,107 @@ nav.mainnav button.active{background:var(--accent);color:#fff}
 
 /* ---------- Past days slider ---------- */
 .past-slider-wrap{margin-bottom:22px}
+
+/* ---------- Specialty banner ---------- */
+.specialty-banner{
+  display:flex;align-items:center;gap:16px;padding:16px 20px;
+  border-radius:14px;border:1px solid var(--line);
+  background:var(--surface);box-shadow:var(--shadow);
+}
+.spec-banner-icon{font-size:32px;flex-shrink:0;line-height:1}
+.spec-banner-body{flex:1;min-width:0}
+.spec-banner-eyebrow{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink-soft);margin-bottom:3px}
+.spec-banner-title{font-family:var(--display);font-size:22px;font-weight:600;line-height:1.15}
+.spec-banner-landmark{font-size:13.5px;color:var(--gold);font-weight:600;margin-top:4px}
+
+/* Specialty pill */
+.pill.spec{font-size:12px;padding:3px 9px}
+/* Priority pills */
+.pill.pill-p1{background:var(--accent-bg);color:var(--accent)}
+.pill.pill-p2{background:var(--hy-bg);color:var(--hy)}
+.pill.pill-tier1,.pill.pill-tier2{background:var(--common-bg);color:var(--common)}
+
+/* Specialty color swatches — used in banners, calendar cells, legend */
+/* Each spec gets a subtle tinted bg/border derived from existing CSS vars */
+.spec-banner-spec-gen,.spec-cell-spec-gen{background:color-mix(in srgb,var(--surface) 70%,var(--accent-bg))}
+.spec-banner-spec-inf,.spec-cell-spec-inf{background:color-mix(in srgb,var(--surface) 70%,var(--green-bg))}
+.spec-banner-spec-neu,.spec-cell-spec-neu{background:color-mix(in srgb,var(--surface) 70%,var(--trap-bg))}
+.spec-banner-spec-card,.spec-cell-spec-card{background:color-mix(in srgb,var(--surface) 70%,var(--red-bg))}
+.spec-banner-spec-gas,.spec-cell-spec-gas{background:color-mix(in srgb,var(--surface) 70%,var(--yellow-bg))}
+.spec-banner-spec-hem,.spec-cell-spec-hem{background:color-mix(in srgb,var(--surface) 70%,var(--red-bg))}
+.spec-banner-spec-em,.spec-cell-spec-em{background:color-mix(in srgb,var(--surface) 70%,var(--accent-bg))}
+.spec-banner-spec-end,.spec-cell-spec-end{background:color-mix(in srgb,var(--surface) 70%,var(--gold-bg))}
+.spec-banner-spec-nep,.spec-cell-spec-nep{background:color-mix(in srgb,var(--surface) 70%,var(--hy-bg))}
+.spec-banner-spec-pul,.spec-cell-spec-pul{background:color-mix(in srgb,var(--surface) 70%,var(--hy-bg))}
+.spec-banner-spec-neo,.spec-cell-spec-neo{background:color-mix(in srgb,var(--surface) 70%,var(--green-bg))}
+.spec-banner-spec-imm,.spec-cell-spec-imm{background:color-mix(in srgb,var(--surface) 70%,var(--trap-bg))}
+.spec-banner-spec-dev,.spec-cell-spec-dev{background:color-mix(in srgb,var(--surface) 70%,var(--yellow-bg))}
+.spec-banner-spec-rhe,.spec-cell-spec-rhe{background:color-mix(in srgb,var(--surface) 70%,var(--common-bg))}
+.spec-banner-spec-ado,.spec-cell-spec-ado{background:color-mix(in srgb,var(--surface) 70%,var(--green-bg))}
+.spec-banner-spec-crit,.spec-cell-spec-crit{background:color-mix(in srgb,var(--surface) 70%,var(--red-bg))}
+.spec-banner-spec-derm,.spec-cell-spec-derm{background:color-mix(in srgb,var(--surface) 70%,var(--common-bg))}
+
+/* ---------- 35-day Calendar ---------- */
+.cal-wrap{margin-bottom:24px}
+.cal-grid{display:flex;flex-direction:column;gap:6px}
+.cal-week{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.cal-cell{
+  position:relative;padding:8px 6px 6px;border-radius:10px;border:1.5px solid var(--line);
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  cursor:default;transition:.15s;min-height:74px;overflow:hidden;
+  background:var(--surface);
+}
+.cal-cell.today{border-color:var(--accent)!important;box-shadow:0 0 0 2px var(--accent-bg)}
+.cal-cell.past{opacity:.7}
+.cal-cell.done{border-color:var(--green)!important}
+.cal-daynum{font-family:var(--display);font-size:11px;font-weight:700;color:var(--ink-soft);line-height:1}
+.cal-icon{font-size:18px;line-height:1;margin-top:1px}
+.cal-date{font-size:9.5px;color:var(--ink-soft);line-height:1;text-align:center}
+.cal-lm{font-size:8px;color:var(--gold);font-weight:700;text-align:center;line-height:1.2;margin-top:2px;max-width:100%}
+.cal-prog{width:100%;height:3px;background:var(--line);border-radius:999px;margin-top:auto}
+.cal-prog-bar{height:100%;background:var(--green);border-radius:999px;transition:width .3s}
+.cal-today-dot{position:absolute;top:5px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.cal-done-badge{position:absolute;bottom:4px;right:5px;font-size:9px;color:var(--green);font-weight:700}
+
+/* Specialty tints on calendar cells */
+.cal-cell.spec-cell-spec-gen{background:color-mix(in srgb,var(--surface) 80%,var(--accent-bg))}
+.cal-cell.spec-cell-spec-inf{background:color-mix(in srgb,var(--surface) 80%,var(--green-bg))}
+.cal-cell.spec-cell-spec-neu{background:color-mix(in srgb,var(--surface) 80%,var(--trap-bg))}
+.cal-cell.spec-cell-spec-card{background:color-mix(in srgb,var(--surface) 80%,var(--red-bg))}
+.cal-cell.spec-cell-spec-gas{background:color-mix(in srgb,var(--surface) 80%,var(--yellow-bg))}
+.cal-cell.spec-cell-spec-hem{background:color-mix(in srgb,var(--surface) 80%,var(--red-bg))}
+.cal-cell.spec-cell-spec-em{background:color-mix(in srgb,var(--surface) 80%,var(--accent-bg))}
+.cal-cell.spec-cell-spec-end{background:color-mix(in srgb,var(--surface) 80%,var(--gold-bg))}
+.cal-cell.spec-cell-spec-nep{background:color-mix(in srgb,var(--surface) 80%,var(--hy-bg))}
+.cal-cell.spec-cell-spec-pul{background:color-mix(in srgb,var(--surface) 80%,var(--hy-bg))}
+.cal-cell.spec-cell-spec-neo{background:color-mix(in srgb,var(--surface) 80%,var(--green-bg))}
+.cal-cell.spec-cell-spec-imm{background:color-mix(in srgb,var(--surface) 80%,var(--trap-bg))}
+.cal-cell.spec-cell-spec-dev{background:color-mix(in srgb,var(--surface) 80%,var(--yellow-bg))}
+.cal-cell.spec-cell-spec-rhe{background:color-mix(in srgb,var(--surface) 80%,var(--common-bg))}
+.cal-cell.spec-cell-spec-ado{background:color-mix(in srgb,var(--surface) 80%,var(--green-bg))}
+.cal-cell.spec-cell-spec-crit{background:color-mix(in srgb,var(--surface) 80%,var(--red-bg))}
+.cal-cell.spec-cell-spec-derm{background:color-mix(in srgb,var(--surface) 80%,var(--common-bg))}
+
+/* Calendar legend */
+.cal-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:12px}
+.cal-legend-item{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-soft)}
+.cal-legend-swatch{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;
+  font-size:11px;border:1px solid var(--line)}
+
+@media(max-width:700px){
+  .cal-week{grid-template-columns:repeat(5,1fr)}
+  .cal-cell{min-height:60px;padding:6px 4px 5px}
+  .cal-icon{font-size:14px}
+  .cal-lm{display:none}
+  .specialty-banner{gap:12px}
+  .spec-banner-title{font-size:18px}
+}
+@media(max-width:480px){
+  .cal-week{grid-template-columns:repeat(4,1fr)}
+}
+
+/* ---------- Past days slider ---------- */
 .past-slider-label{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:10px}
 .past-slider{display:flex;gap:9px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .past-slider::-webkit-scrollbar{display:none}
