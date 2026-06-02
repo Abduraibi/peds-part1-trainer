@@ -712,9 +712,14 @@ function _planFromSaved(saved, mode){
 
 /* mark a question complete within today's frozen plan */
 function markDayDone(id){
-  const day=todayStr();
-  const log=STATE.dayLog[day];
-  if(log){ log.done=log.done||{}; log.done[id]=true; saveState(); }
+  const day = runnerCtx?.pastDay || todayStr();
+  const log = STATE.dayLog[day];
+
+  if(log){
+    log.done = log.done || {};
+    log.done[id] = true;
+    saveState();
+  }
 }
 /* flatten today's plan into an ordered id list (for resume / study-all) */
 function todayOrderedIds(){
@@ -1503,7 +1508,12 @@ function answer(id,lab){
   const effAns=effectiveAnswer(q);
   const correctLab=(effAns.match(/^([A-G])/)||[])[1];
   if(correctLab){ recordResult(id, lab===correctLab); }
-  if(runnerCtx.origin==="plan") markDayDone(id);
+ if(
+  runnerCtx.origin==="plan" ||
+  runnerCtx.origin==="pastday"
+){
+  markDayDone(id);
+}
   revealAnswer(q,lab,false);
 }
 function revealAnswer(q,lab,restore){
