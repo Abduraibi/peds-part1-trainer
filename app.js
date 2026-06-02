@@ -721,11 +721,14 @@ function markDayDone(id){
     done: {}
   };
 
-  if(!STATE.dayLog[day].done){
-    STATE.dayLog[day].done = {};
-  }
+  const log = STATE.dayLog[day];
 
-  STATE.dayLog[day].done[id] = true;
+  if(!log.done) log.done = {};
+
+  // prevent double counting
+  if(log.done[id]) return;
+
+  log.done[id] = true;
 
   saveState();
 }
